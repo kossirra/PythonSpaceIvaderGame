@@ -9,24 +9,24 @@ WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Space Invader")
 
 # Load images
-RED_SPACE_SHIP = pygame.image.load(os.path.join("images", "pixel_ship_red_small.png"))
-GREEN_SPACE_SHIP = pygame.image.load(os.path.join("images", "pixel_ship_green_small.png"))
-BLUE_SPACE_SHIP = pygame.image.load(os.path.join("images", "pixel_ship_blue_small.png"))
+Enemy1_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_1.png"))
+Enemy2_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_2.png"))
+Enemy3_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_3.png"))
 
 # Player ship
-YELLOW_SPACE_SHIP = pygame.image.load(os.path.join("images", "pixel_ship_yellow.png"))
+PLAYER_SPACE_SHIP = pygame.image.load(os.path.join("images", "Spaceship_player.png"))
 
 # Lasers
-RED_LASER = pygame.image.load(os.path.join("images", "pixel_laser_red.png"))
-GREEN_LASER = pygame.image.load(os.path.join("images", "pixel_laser_green.png"))
-BLUE_LASER = pygame.image.load(os.path.join("images", "pixel_laser_blue.png"))
-YELLOW_LASER = pygame.image.load(os.path.join("images", "pixel_laser_yellow.png"))
+Enemy1_LASER = pygame.image.load(os.path.join("images", "pixel_laser_red.png"))
+Enemy2_LASER = pygame.image.load(os.path.join("images", "pixel_laser_green.png"))
+Enemy3_LASER = pygame.image.load(os.path.join("images", "pixel_laser_blue.png"))
+PLAYER_LASER = pygame.image.load(os.path.join("images", "pixel_laser_yellow.png"))
 
 # Background
-BG = pygame.transform.scale(pygame.image.load(os.path.join("images", "background-black.png")), (HEIGHT,WIDTH ))
+BG = pygame.transform.scale(pygame.image.load(os.path.join("images", "background_main.png")), (HEIGHT,WIDTH ))
 
 class Ship:
-    def __init__(self, x, y, health=100):
+    def __init__(self, x, y, health=100): # constructor
         self.x = x
         self.y = y
         self.health = health
@@ -38,20 +38,46 @@ class Ship:
     def draw(self, window):
         window.blit(self.ship_img, (self.x, self.y))
 
+    def get_width(self):
+        return self.ship_img.get_width()
+    
+    def get_height(self):
+        return self.ship_img.get_height()
+
 class Player(Ship):
-    def __init__(self, x, y, health=100):
+    def __init__(self, x, y, health=100): # constructor
         super().__init__(x, y, health)
-        self.ship_img = YELLOW_SPACE_SHIP
-        self.laser_img = YELLOW_LASER
+        self.ship_img = PLAYER_SPACE_SHIP
+        self.laser_img = PLAYER_LASER
         self.mask = pygame.mask.from_surface(self.ship_img)
         self.max_health = health
+
+class Enemy(Ship):
+    COLOR_MAP = {
+        "silver": (Enemy1_SPACE_SHIP, Enemy1_LASER),
+        "red": (Enemy2_SPACE_SHIP, Enemy2_LASER),
+        "green": (Enemy3_SPACE_SHIP, Enemy3_LASER)
+    }
+
+    def __init__(self, x, y, color, health=100): 
+        super().__init__(x, y, health) 
+        self.ship_img, self.laser_img = self.COLOR_MAP[color]
+        self.mask = pygame.mask.from_surface(self.ship_img)
+
+    def move(self, vel):
+        self.y += vel    
+
 
 def main():
     run = True
     FPS = 60
-    level = 1
+    level = 0
     lives = 5
     main_font = pygame.font.SysFont("comicsans", 50)
+
+    enemies = []
+    wave_length = 5
+    enemy_vel = 1
 
     player_vel = 5
 
@@ -67,6 +93,9 @@ def main():
 
         WIN.blit(lives_label, (10,10))
         WIN.blit(level_label, (WIDTH - level_label.get_width() - 10, 10))
+        
+        for enemy in enemies:
+            enemy.draw(WIN)
 
         player.draw(WIN)
     
@@ -74,7 +103,13 @@ def main():
 
     while run:
         clock.tick(FPS)
-        redraw_window()
+
+        if len(enemies) == 0:
+            level += 1
+            wave_length += 5
+            for i in range(wave_length):
+                enemy = Enemy(random.randrange(50, WIDTH-100), random.randrange(-1500, -100), random.choice(["silver", "red", "green"]))
+                enemies.append(enemy)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -83,11 +118,16 @@ def main():
         keys = pygame.key.get_pressed()
         if keys[pygame.K_a] and player.x - player_vel > 0: # left
             player.x -= player_vel
-        if keys[pygame.K_d] and player.x + player_vel + 50 < WIDTH: # right
+        if keys[pygame.K_d] and player.x + player_vel + player.get_width() < WIDTH: # right
             player.x += player_vel
         if keys[pygame.K_w] and player.y - player_vel > 0: # up
             player.y -= player_vel
-        if keys[pygame.K_s] and player.y + player_vel + 50 < HEIGHT: # down
+        if keys[pygame.K_s] and player.y + player_vel + player.get_height() < HEIGHT: # down
             player.y += player_vel
+
+        for enemy in enemies:
+            enemy.move(enemy_vel)
+
+        redraw_window()    
 
 main()          
