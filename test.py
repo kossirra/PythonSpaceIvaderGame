@@ -14,7 +14,7 @@ Enemy2_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_2.png"))
 Enemy3_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_3.png"))
 
 # Player ship
-PLAYER_SPACE_SHIP = pygame.image.load(os.path.join("images", "Spaceship_player.png"))
+PLAYER_SPACE_SHIP = pygame.image.load(os.path.join("images", "Spaceship_player.png"))  
 
 # Lasers
 Enemy1_LASER = pygame.image.load(os.path.join("images", "pixel_laser_yellow.png"))
