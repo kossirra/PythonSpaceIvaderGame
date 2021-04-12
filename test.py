@@ -45,7 +45,7 @@ class Laser:
         return collide(self, obj)
 
 class Ship:
-    COOLDOWN = 30
+    COOLDOWN = 25
 
     def __init__(self, x, y, health=100): # Ship constructor
         self.x = x
@@ -61,7 +61,7 @@ class Ship:
         for laser in self.lasers:
             laser.draw(window)
 
-    def move_lasers(self, vel, obj): # Laser 
+    def move_lasers(self, vel, obj): # Laser movment at all ships
         self.cooldown()
         for laser in self.lasers:
             laser.move(vel)
@@ -71,7 +71,7 @@ class Ship:
                 obj.health -= 10
                 self.lasers.remove(laser)
 
-    def cooldown(self):
+    def cooldown(self): # One shoot per 1/2 sec
         if self.cool_down_counter >= self.COOLDOWN:
             self.cool_down_counter = 0
 
@@ -98,7 +98,7 @@ class Player(Ship):
         self.mask = pygame.mask.from_surface(self.ship_img)
         self.max_health = health
 
-    def move_lasers(self, vel, objs): 
+    def move_lasers(self, vel, objs): # lasers movment
         self.cooldown()
         for laser in self.lasers:
             laser.move(vel)
@@ -110,7 +110,7 @@ class Player(Ship):
                         objs.remove(obj)
                         self.lasers.remove(laser)
 
-class Enemy(Ship):
+class Enemy(Ship): # Three types of enemy ships
     COLOR_MAP = {
         "silver": (Enemy1_SPACE_SHIP, Enemy1_LASER),
         "red": (Enemy2_SPACE_SHIP, Enemy2_LASER),
@@ -125,7 +125,7 @@ class Enemy(Ship):
     def move(self, vel):
         self.y += vel    
 
-def collide(obj1, obj2):
+def collide(obj1, obj2): # Defining s hit
     offset_x = obj2.x - obj1.x
     offset_y = obj2.y - obj1.y
     return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
@@ -139,11 +139,11 @@ def main():
     lost_font = pygame.font.SysFont("comicsans", 60)
 
     enemies = []
-    wave_length = 5
-    enemy_vel = 1
+    wave_length = 5 
+    enemy_vel = 1 # Enemy ship speed
 
-    player_vel = 5
-    laser_vel = 5
+    player_vel = 5 # Player ship speed
+    laser_vel = 6 # Laser speed
 
     player = Player(300, 650)
 
@@ -177,19 +177,19 @@ def main():
 
         redraw_window()   
 
-        if lives <= 0 or player.health <= 0:
+        if lives <= 0 or player.health <= 0: # Level completion condition 
             lost = True
             lost_count += 1
 
         if lost: # Continue or Quit option
-            if lost_count > FPS * 5:
+            if lost_count > FPS * 20:
                 run = False
             else:
                 continue
 
         if len(enemies) == 0:
             level += 1
-            wave_length += 5
+            wave_length += 5 # 5 more enemies per level
             for i in range(wave_length):
                 enemy = Enemy(random.randrange(50, WIDTH-100), random.randrange(-1500, -100), random.choice(["silver", "red", "green"])) # spawning enemy ships
                 enemies.append(enemy)
@@ -207,7 +207,7 @@ def main():
             player.y -= player_vel
         if keys[pygame.K_s] and player.y + player_vel + player.get_height() < HEIGHT: # down
             player.y += player_vel
-        if keys[pygame.K_SPACE]:
+        if keys[pygame.K_SPACE]: # shoot
             player.shoot()
 
         for enemy in enemies[:]: # enemy movment
