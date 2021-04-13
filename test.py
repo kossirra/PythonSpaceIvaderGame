@@ -17,10 +17,10 @@ Enemy3_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_3.png"))
 PLAYER_SPACE_SHIP = pygame.image.load(os.path.join("images", "Spaceship_player.png"))  
 
 # Lasers
-Enemy1_LASER = pygame.image.load(os.path.join("images", "pixel_laser_yellow.png"))
-Enemy2_LASER = pygame.image.load(os.path.join("images", "pixel_laser_green.png"))
-Enemy3_LASER = pygame.image.load(os.path.join("images", "pixel_laser_blue.png"))
-PLAYER_LASER = pygame.image.load(os.path.join("images", "pixel_laser_red.png"))
+Enemy1_LASER = pygame.image.load(os.path.join("images", "laser_blue.png"))
+Enemy2_LASER = pygame.image.load(os.path.join("images", "laser_green.png"))
+Enemy3_LASER = pygame.image.load(os.path.join("images", "laser_yellow.png"))
+PLAYER_LASER = pygame.image.load(os.path.join("images", "laser_red.png"))
 
 # Background
 BG = pygame.transform.scale(pygame.image.load(os.path.join("images", "background_main.png")), (HEIGHT,WIDTH ))
@@ -110,6 +110,14 @@ class Player(Ship):
                         objs.remove(obj)
                         self.lasers.remove(laser)
 
+    def draw(self, window):
+        super().draw(window)
+        self.healthbar(window)
+
+    def healthbar(self, window):
+        pygame.draw.rect(window, (255, 0, 0), (self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width(), 10))
+        pygame.draw.rect(window, (0, 255, 0), (self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width() * (self.health / self.max_health), 10))
+
 class Enemy(Ship): # Three types of enemy ships
     COLOR_MAP = {
         "silver": (Enemy1_SPACE_SHIP, Enemy1_LASER),
@@ -124,6 +132,12 @@ class Enemy(Ship): # Three types of enemy ships
 
     def move(self, vel):
         self.y += vel    
+
+    def shoot(self):
+        if self.cool_down_counter == 0:
+            laser = Laser(self.x-15, self.y, self.laser_img)
+            self.lasers.append(laser)
+            self.cool_down_counter = 1
 
 def collide(obj1, obj2): # Defining s hit
     offset_x = obj2.x - obj1.x
@@ -143,9 +157,9 @@ def main():
     enemy_vel = 1 # Enemy ship speed
 
     player_vel = 5 # Player ship speed
-    laser_vel = 6 # Laser speed
+    laser_vel = 7 # Laser speed
 
-    player = Player(300, 650)
+    player = Player(300, 630)
 
     clock = pygame.time.Clock()
 
@@ -205,7 +219,7 @@ def main():
             player.x += player_vel
         if keys[pygame.K_w] and player.y - player_vel > 0: # up
             player.y -= player_vel
-        if keys[pygame.K_s] and player.y + player_vel + player.get_height() < HEIGHT: # down
+        if keys[pygame.K_s] and player.y + player_vel + player.get_height() + 15 < HEIGHT: # down
             player.y += player_vel
         if keys[pygame.K_SPACE]: # shoot
             player.shoot()
@@ -213,7 +227,15 @@ def main():
         for enemy in enemies[:]: # enemy movment
             enemy.move(enemy_vel)
             enemy.move_lasers(laser_vel, player)
-            if enemy.y + enemy.get_height() > HEIGHT: # lives counter down
+           
+            if random.randrange(0, 2*60) == 1: # enemy fire rate
+               enemy.shoot()
+
+            if collide(enemy, player): # Collide player with enemy
+                player.health -= 10
+                enemies.remove(enemy)
+
+            elif enemy.y + enemy.get_height() > HEIGHT: # lives counter down
                 lives -= 1
                 enemies.remove(enemy)
 
