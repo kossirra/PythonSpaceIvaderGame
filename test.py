@@ -3,10 +3,17 @@ import os
 import time
 import random
 pygame.font.init()
+pygame.mixer.init()
+
  
 WIDTH, HEIGHT = 750, 750
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Space Invader")
+
+# Load sounds
+shoot_sound = pygame.mixer.Sound(os.path.join("sounds", "laser_shoot.mp3"))
+death_sound = pygame.mixer.Sound(os.path.join("sounds", "death.mp3"))
+
 
 # Load images
 Enemy1_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_1.png"))
@@ -18,8 +25,8 @@ PLAYER_SPACE_SHIP = pygame.image.load(os.path.join("images", "Spaceship_player.p
 
 # Lasers
 Enemy1_LASER = pygame.image.load(os.path.join("images", "laser_blue.png"))
-Enemy2_LASER = pygame.image.load(os.path.join("images", "laser_green.png"))
-Enemy3_LASER = pygame.image.load(os.path.join("images", "laser_yellow.png"))
+Enemy2_LASER = pygame.image.load(os.path.join("images", "laser_orange.png"))
+Enemy3_LASER = pygame.image.load(os.path.join("images", "laser_green.png"))
 PLAYER_LASER = pygame.image.load(os.path.join("images", "laser_red.png"))
 
 # Background
@@ -45,8 +52,7 @@ class Laser:
         return collide(self, obj)
 
 class Ship:
-    COOLDOWN = 25
-
+    
     def __init__(self, x, y, health=100): # Ship constructor
         self.x = x
         self.y = y
@@ -81,6 +87,7 @@ class Ship:
     def shoot(self):
         if self.cool_down_counter == 0:
             laser = Laser(self.x, self.y, self.laser_img)
+            shoot_sound.play()
             self.lasers.append(laser)
             self.cool_down_counter = 1
 
@@ -91,6 +98,9 @@ class Ship:
         return self.ship_img.get_height()
 
 class Player(Ship):
+
+    COOLDOWN = 20 
+
     def __init__(self, x, y, health=100): # constructor
         super().__init__(x, y, health)
         self.ship_img = PLAYER_SPACE_SHIP
@@ -107,6 +117,7 @@ class Player(Ship):
             else:
                 for obj in objs:
                     if laser.collision(obj):
+                        death_sound.play()
                         objs.remove(obj)
                         self.lasers.remove(laser)
 
@@ -125,10 +136,13 @@ class Enemy(Ship): # Three types of enemy ships
         "green": (Enemy3_SPACE_SHIP, Enemy3_LASER)
     }
 
+    
+
     def __init__(self, x, y, color, health=100): # constructor
         super().__init__(x, y, health) 
         self.ship_img, self.laser_img = self.COLOR_MAP[color]
         self.mask = pygame.mask.from_surface(self.ship_img)
+        self.COOLDOWN = random.randrange(10, 60)
 
     def move(self, vel):
         self.y += vel    
@@ -139,7 +153,7 @@ class Enemy(Ship): # Three types of enemy ships
             self.lasers.append(laser)
             self.cool_down_counter = 1
 
-def collide(obj1, obj2): # Defining s hit
+def collide(obj1, obj2): # Defining hit
     offset_x = obj2.x - obj1.x
     offset_y = obj2.y - obj1.y
     return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
@@ -151,6 +165,11 @@ def main():
     lives = 5
     main_font = pygame.font.SysFont("comicsans", 50)
     lost_font = pygame.font.SysFont("comicsans", 60)
+
+
+    # Music
+    pygame.mixer.music.load(os.path.join("sounds", "Accelerated.mp3"))
+    pygame.mixer.music.play(loops=-1)
 
     enemies = []
     wave_length = 5 
@@ -169,8 +188,8 @@ def main():
     def redraw_window():
         WIN.blit(BG, (0,0))
         # draw text
-        lives_label = main_font.render(f"Lives: {lives}", 1, (255,0,0))
-        level_label = main_font.render(f"Level: {level}", 1, (0,0,255))
+        lives_label = main_font.render(f"Lives: {lives}", 1, (255,255,255))
+        level_label = main_font.render(f"Level: {level}", 1, (255,255,255))
 
         WIN.blit(lives_label, (10,10))
         WIN.blit(level_label, (WIDTH - level_label.get_width() - 10, 10))
@@ -233,6 +252,7 @@ def main():
 
             if collide(enemy, player): # Collide player with enemy
                 player.health -= 10
+                death_sound.play()
                 enemies.remove(enemy)
 
             elif enemy.y + enemy.get_height() > HEIGHT: # lives counter down
@@ -241,4 +261,22 @@ def main():
 
         player.move_lasers(-laser_vel, enemies)
 
-main()          
+def main_menu():
+    title_font = pygame.font.SysFont("comicsans", 70)
+    run = True
+    while run:
+        WIN.blit(BG, (0, 0))
+        title_label = title_font.render("Press the space to begin...", 1, (255, 255, 255))
+        WIN.blit(title_label, (WIDTH/2 - title_label.get_width()/2, 350))
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+              main()
+
+    pygame.quit()               
+
+main_menu()          
