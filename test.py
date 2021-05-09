@@ -5,15 +5,17 @@ import random
 pygame.font.init()
 pygame.mixer.init()
 
- 
 WIDTH, HEIGHT = 750, 750
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Space Invader")
+global move_counter
+move_counter = 0
+
 
 # Load sounds
 shoot_sound = pygame.mixer.Sound(os.path.join("sounds", "laser_shoot.mp3"))
 death_sound = pygame.mixer.Sound(os.path.join("sounds", "death.mp3"))
-
+damage_sound = pygame.mixer.Sound(os.path.join("sounds", "Damage_sound.mp3"))
 
 # Load images
 Enemy1_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_1.png"))
@@ -75,9 +77,10 @@ class Ship:
                 self.lasers.remove(laser)
             elif laser.collision(obj):
                 obj.health -= 10
+                damage_sound.play()
                 self.lasers.remove(laser)
 
-    def cooldown(self): # One shoot per 1/2 sec
+    def cooldown(self): 
         if self.cool_down_counter >= self.COOLDOWN:
             self.cool_down_counter = 0
 
@@ -87,7 +90,7 @@ class Ship:
     def shoot(self):
         if self.cool_down_counter == 0:
             laser = Laser(self.x, self.y, self.laser_img)
-            shoot_sound.play()
+            shoot_sound.play() # shoot sound
             self.lasers.append(laser)
             self.cool_down_counter = 1
 
@@ -117,9 +120,12 @@ class Player(Ship):
             else:
                 for obj in objs:
                     if laser.collision(obj):
-                        death_sound.play()
+                        global score 
+                        score += 10
+                        death_sound.play() # Sound when an enemy ship is destroyed
                         objs.remove(obj)
                         self.lasers.remove(laser)
+                        
 
     def draw(self, window):
         super().draw(window)
@@ -136,16 +142,33 @@ class Enemy(Ship): # Three types of enemy ships
         "green": (Enemy3_SPACE_SHIP, Enemy3_LASER)
     }
 
-    
-
     def __init__(self, x, y, color, health=100): # constructor
         super().__init__(x, y, health) 
         self.ship_img, self.laser_img = self.COLOR_MAP[color]
         self.mask = pygame.mask.from_surface(self.ship_img)
-        self.COOLDOWN = random.randrange(10, 60)
+        self.COOLDOWN = random.randrange(10, 60) # random shot frequency
 
-    def move(self, vel):
-        self.y += vel    
+    def move(self, vel,):
+
+        global move_counter
+        move_counter += 1
+        
+        if level % 2 == 0:
+            if move_counter < 200:
+                dir_x = 0
+            elif move_counter <400:
+                dir_x = -3
+            elif move_counter < 600 :
+                dir_x = 3
+            else:
+                move_counter = 0
+                dir_x = 0
+        else:
+            dir_x = 0
+
+        self.y += vel  
+        if (self.x + dir_x < WIDTH) and (self.x +dir_x > 0):
+                self.x += dir_x 
 
     def shoot(self):
         if self.cool_down_counter == 0:
@@ -161,22 +184,26 @@ def collide(obj1, obj2): # Defining hit
 def main():
     run = True
     FPS = 60
+    global level
     level = 0
     lives = 5
-    main_font = pygame.font.SysFont("comicsans", 50)
+    global score
+    score = 0
+
+    main_font = pygame.font.SysFont("comicsans", 30)
     lost_font = pygame.font.SysFont("comicsans", 60)
 
 
-    # Music
+    # Background music
     pygame.mixer.music.load(os.path.join("sounds", "Accelerated.mp3"))
     pygame.mixer.music.play(loops=-1)
 
     enemies = []
-    wave_length = 5 
+    wave_length = 2 # basic number of enemies 
     enemy_vel = 1 # Enemy ship speed
 
     player_vel = 5 # Player ship speed
-    laser_vel = 7 # Laser speed
+    laser_vel = 8 # Laser speed
 
     player = Player(300, 630)
 
@@ -190,9 +217,11 @@ def main():
         # draw text
         lives_label = main_font.render(f"Lives: {lives}", 1, (255,255,255))
         level_label = main_font.render(f"Level: {level}", 1, (255,255,255))
+        score_label = main_font.render(f"Score: {score}", 1, (255,255,255))
 
         WIN.blit(lives_label, (10,10))
         WIN.blit(level_label, (WIDTH - level_label.get_width() - 10, 10))
+        WIN.blit(score_label, (10,725))
         
         for enemy in enemies:
             enemy.draw(WIN)
@@ -215,14 +244,14 @@ def main():
             lost_count += 1
 
         if lost: # Continue or Quit option
-            if lost_count > FPS * 20:
+            if lost_count > FPS * 5:
                 run = False
             else:
                 continue
 
         if len(enemies) == 0:
             level += 1
-            wave_length += 5 # 5 more enemies per level
+            wave_length += 4 # 4 more enemies per level
             for i in range(wave_length):
                 enemy = Enemy(random.randrange(50, WIDTH-100), random.randrange(-1500, -100), random.choice(["silver", "red", "green"])) # spawning enemy ships
                 enemies.append(enemy)
@@ -252,6 +281,7 @@ def main():
 
             if collide(enemy, player): # Collide player with enemy
                 player.health -= 10
+                score -= 15
                 death_sound.play()
                 enemies.remove(enemy)
 
@@ -266,7 +296,7 @@ def main_menu():
     run = True
     while run:
         WIN.blit(BG, (0, 0))
-        title_label = title_font.render("Press the space to begin...", 1, (255, 255, 255))
+        title_label = title_font.render("Press the mouse to begin!", 1, (255, 255, 255))
         WIN.blit(title_label, (WIDTH/2 - title_label.get_width()/2, 350))
 
         pygame.display.update()
