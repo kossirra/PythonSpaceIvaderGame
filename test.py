@@ -154,12 +154,13 @@ class Enemy(Ship): # Three types of enemy ships
         move_counter += 1
         
         if level % 2 == 0:
+
             if move_counter < 200:
                 dir_x = 0
             elif move_counter <400:
-                dir_x = -3
+                dir_x = -2
             elif move_counter < 600 :
-                dir_x = 3
+                dir_x = 2
             else:
                 move_counter = 0
                 dir_x = 0
@@ -167,7 +168,7 @@ class Enemy(Ship): # Three types of enemy ships
             dir_x = 0
 
         self.y += vel  
-        if (self.x + dir_x < WIDTH) and (self.x +dir_x > 0):
+        if (self.x + dir_x < WIDTH-75) and (self.x +dir_x > 15):
                 self.x += dir_x 
 
     def shoot(self):
@@ -229,7 +230,7 @@ def main():
         player.draw(WIN)
 
         if lost:
-            lost_label = lost_font.render("You Lost!", 1, (255, 255, 255)) # Text You Lost
+            lost_label = lost_font.render("Game Over", 1, (255, 255, 255)) # Text You Lost
             WIN.blit(lost_label, (WIDTH/2 - lost_label.get_width()/2, 350)) # Text center
     
         pygame.display.update()
@@ -252,9 +253,32 @@ def main():
         if len(enemies) == 0:
             level += 1
             wave_length += 4 # 4 more enemies per level
-            for i in range(wave_length):
-                enemy = Enemy(random.randrange(50, WIDTH-100), random.randrange(-1500, -100), random.choice(["silver", "red", "green"])) # spawning enemy ships
-                enemies.append(enemy)
+            #prev_location = (0,0)
+            prev_enemy = Enemy(0,0,"red")
+
+            while (len(enemies) < wave_length):
+
+                colission = False
+                location_x = random.randrange(50, WIDTH-100)
+                location_y =  random.randrange(-1500, -100)
+                
+                new_enemy = Enemy(location_x, location_y, random.choice(["silver", "red", "green"])) # spawning enemy ships
+                
+                for enemy in enemies:
+                    if not collide(new_enemy, enemy):
+                        pass
+                    else:
+                        colission = True
+
+                if not colission:
+                    enemies.append(new_enemy)
+        
+                    
+
+                # if prev_location != (location_x,location_y):
+                #     enemy = Enemy(location_x, location_y, random.choice(["silver", "red", "green"])) # spawning enemy ships
+                #     enemies.append(enemy)
+                # prev_location = (location_x,location_y)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
