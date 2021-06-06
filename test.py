@@ -17,15 +17,20 @@ shoot_sound = pygame.mixer.Sound(os.path.join("sounds", "laser_shoot.mp3"))
 death_sound = pygame.mixer.Sound(os.path.join("sounds", "death.mp3"))
 damage_sound = pygame.mixer.Sound(os.path.join("sounds", "Damage_sound.mp3"))
 
-# Load images
+# Load enemy ship images
 Enemy1_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_1.png"))
 Enemy2_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_2.png"))
 Enemy3_SPACE_SHIP = pygame.image.load(os.path.join("images", "enemy_3.png"))
 
-# Player ship
+# Load meteor images
+Meteor_1 = pygame.image.load(os.path.join("images", "meteor_1.png")) # NEW!
+Meteor_2 = pygame.image.load(os.path.join("images", "meteor_2.png")) #NEW!
+Meteor_3 = pygame.image.load(os.path.join("images", "meteor_3.png")) #NEW!
+
+# Load player ship
 PLAYER_SPACE_SHIP = pygame.image.load(os.path.join("images", "Spaceship_player.png"))  
 
-# Lasers
+# Load lasers images
 Enemy1_LASER = pygame.image.load(os.path.join("images", "laser_blue.png"))
 Enemy2_LASER = pygame.image.load(os.path.join("images", "laser_orange.png"))
 Enemy3_LASER = pygame.image.load(os.path.join("images", "laser_green.png"))
@@ -52,6 +57,47 @@ class Laser:
 
     def collision(self, obj):
         return collide(self, obj)
+
+class Meteor: # NEW!
+    ROCKY_MAP = {
+        "Rock1": (Meteor_1),
+        "Rock2": (Meteor_2),
+        "Rock3": (Meteor_3)
+    }
+
+    def __init__(self, x, y, rocky, health=100):
+        #super().__init__(x, y, health) 
+        self.x = x
+        self.y = y
+        self.health = health
+        self.meteor_img = self.ROCKY_MAP.get(rocky)
+        self.mask = pygame.mask.from_surface(self.meteor_img)
+      
+
+    def draw(self, window):
+        window.blit(self.meteor_img, (self.x, self.y))
+
+    def move(self, vel):
+        global move_counter
+        move_counter += 1
+        
+        if move_counter < 400:
+            dir_x = 2
+        elif move_counter <800:
+            dir_x = -2
+        else:
+            dir_x = 2
+        
+        self.y += vel  
+        if (self.x + dir_x < WIDTH-75) and (self.x +dir_x > 15):
+                self.x += dir_x 
+
+        def get_width(self):
+            return self.meteor_img.get_width()
+    
+        def get_height(self):
+            return self.meteor_img.get_height()
+ 
 
 class Ship:
     
@@ -148,7 +194,7 @@ class Enemy(Ship): # Three types of enemy ships
         self.mask = pygame.mask.from_surface(self.ship_img)
         self.COOLDOWN = random.randrange(10, 60) # random shot frequency
 
-    def move(self, vel,):
+    def move(self, vel):
 
         global move_counter
         move_counter += 1
@@ -193,21 +239,26 @@ def main():
 
     main_font = pygame.font.SysFont("comicsans", 30)
     lost_font = pygame.font.SysFont("comicsans", 60)
+    score_font = pygame.font.SysFont("comicsans", 40)
 
 
     # Background music
     pygame.mixer.music.load(os.path.join("sounds", "Accelerated.mp3"))
     pygame.mixer.music.play(loops=-1)
 
-    enemies = []
+    enemies = []   
     wave_length = 2 # basic number of enemies 
     enemy_vel = 1 # Enemy ship speed
+
+    meteors = [] # NEW!
+    meteor_vel = 2 # NEW!
+    meteor_length = 12 # NEW!
 
     player_vel = 5 # Player ship speed
     laser_vel = 8 # Laser speed
 
     player = Player(300, 630)
-
+   
     clock = pygame.time.Clock()
 
     lost = False
@@ -227,11 +278,16 @@ def main():
         for enemy in enemies:
             enemy.draw(WIN)
 
+        for meteor in meteors: # NEW!
+            meteor.draw(WIN)
+
         player.draw(WIN)
 
         if lost:
             lost_label = lost_font.render("Game Over", 1, (255, 255, 255)) # Text You Lost
             WIN.blit(lost_label, (WIDTH/2 - lost_label.get_width()/2, 350)) # Text center
+            lost_label = score_font.render(f"Destroyed enemy ships: {score/10}", 1, (255, 255, 255))
+            WIN.blit(lost_label, (WIDTH/2 - lost_label.get_width()/2, 400))
     
         pygame.display.update()
 
@@ -245,15 +301,36 @@ def main():
             lost_count += 1
 
         if lost: # Continue or Quit option
-            if lost_count > FPS * 5:
+            if lost_count > FPS * 10:
                 run = False
             else:
                 continue
 
+        if len(meteors) == 0: # NEW!
+            level += 1
+            meteor_length += 4
+            prev_meteor = Meteor(0,0, "Rock1")
+
+            while (len(meteors) < meteor_vel):
+
+                colission = False
+                location_x = random.randrange(50, WIDTH-100)
+                location_y =  random.randrange(-1000, -100)
+                new_meteor = Meteor(location_x, location_y, random.choice(["Rock1", "Rock2", "Rock3"]))
+
+                for meteor in meteors:
+                    if not collide(new_meteor, meteor):
+                        pass
+                    else:
+                        colission = True
+
+                if not colission:
+                    meteors.append(new_meteor)
+
+
         if len(enemies) == 0:
             level += 1
             wave_length += 4 # 4 more enemies per level
-            #prev_location = (0,0)
             prev_enemy = Enemy(0,0,"red")
 
             while (len(enemies) < wave_length):
@@ -273,13 +350,6 @@ def main():
                 if not colission:
                     enemies.append(new_enemy)
         
-                    
-
-                # if prev_location != (location_x,location_y):
-                #     enemy = Enemy(location_x, location_y, random.choice(["silver", "red", "green"])) # spawning enemy ships
-                #     enemies.append(enemy)
-                # prev_location = (location_x,location_y)
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -296,6 +366,9 @@ def main():
         if keys[pygame.K_SPACE]: # shoot
             player.shoot()
 
+        for meteor in meteors[:]:
+            meteor.move(meteor_vel)
+
         for enemy in enemies[:]: # enemy movment
             enemy.move(enemy_vel)
             enemy.move_lasers(laser_vel, player)
@@ -305,7 +378,7 @@ def main():
 
             if collide(enemy, player): # Collide player with enemy
                 player.health -= 10
-                score -= 15
+                score += 10
                 death_sound.play()
                 enemies.remove(enemy)
 
