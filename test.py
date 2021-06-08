@@ -66,7 +66,7 @@ class Laser:
     def collision(self, obj):
         return collide(self, obj)
 
-class Meteor: # NEW!
+class Meteor: 
     __ROCKY_MAP = {             # (encapsulation) double underscore according to python convencion makes variable
                                 # ROCKY_MAP private. In runtime python is mangling __ into class name,
                                 # so refering to __ROCKY_MAP from outside class cause error 
@@ -88,25 +88,18 @@ class Meteor: # NEW!
         window.blit(self.meteor_img, (self.x, self.y))
 
     def move(self, vel):
-        global move_counter
-        move_counter += 1
-        
-        if move_counter < 400:
-            dir_x = 2
-        elif move_counter <800:
-            dir_x = -2
-        else:
-            dir_x = 2
+        dir_x = 0
+
         
         self.y += vel  
         if (self.x + dir_x < WIDTH-75) and (self.x +dir_x > 15):
                 self.x += dir_x 
 
-        def get_width(self):
-            return self.meteor_img.get_width()
+    def get_width(self):
+        return self.meteor_img.get_width()
     
-        def get_height(self):
-            return self.meteor_img.get_height()
+    def get_height(self):
+        return self.meteor_img.get_height()
  
 
 class Ship(ABC): # class ship inherits from ABC (python mechanism to make Ship abstract class)
@@ -213,7 +206,7 @@ class Enemy(Ship): # Enemy inherits from Ship
         global move_counter
         move_counter += 1
         
-        if level % 2 == 0:
+        if level % 3 == 0:
 
             if move_counter < 200:
                 dir_x = 0
@@ -264,9 +257,9 @@ def main():
     wave_length = 2 # basic number of enemies 
     enemy_vel = 1 # Enemy ship speed
 
-    meteors = [] # NEW!
-    meteor_vel = 2 # NEW!
-    meteor_length = 12 # NEW!
+    meteors = [] 
+    meteor_length = 4 # basic number of meteors
+    meteor_vel = 2 # meteor speed
 
     player_vel = 5 # Player ship speed
     laser_vel = 8 # Laser speed
@@ -280,6 +273,7 @@ def main():
 
     def redraw_window():
         WIN.blit(BG, (0,0))
+
         # draw text
         lives_label = main_font.render(f"Lives: {lives}", 1, (255,255,255))
         level_label = main_font.render(f"Level: {level}", 1, (255,255,255))
@@ -292,7 +286,7 @@ def main():
         for enemy in enemies:
             enemy.draw(WIN)
 
-        for meteor in meteors: # NEW!
+        for meteor in meteors: 
             meteor.draw(WIN)
 
         player.draw(WIN)
@@ -320,8 +314,8 @@ def main():
             else:
                 continue
 
-        if len(meteors) == 0: # NEW!
-            level += 1
+        if len(meteors) == 0: 
+            level += 0
             meteor_length += 4
             prev_meteor = Meteor(0,0, "Rock1")
 
@@ -330,6 +324,7 @@ def main():
                 colission = False
                 location_x = random.randrange(50, WIDTH-100)
                 location_y =  random.randrange(-1000, -100)
+
                 new_meteor = Meteor(location_x, location_y, random.choice(["Rock1", "Rock2", "Rock3"]))
 
                 for meteor in meteors:
@@ -383,7 +378,18 @@ def main():
         for meteor in meteors[:]:
             meteor.move(meteor_vel)
 
-        for enemy in enemies[:]: # enemy movment
+            if collide(meteor, player): # Collide player with meteor
+                player.health -= 10
+                death_sound.play()
+                meteors.remove(meteor)
+
+            elif meteor.y + meteor.get_height() > HEIGHT: 
+                meteors.remove(meteor)
+        player.move_lasers(-laser_vel, meteors)
+
+
+
+        for enemy in enemies[:]: 
             enemy.move(enemy_vel)
             enemy.move_lasers(laser_vel, player) # (polymorfism) - enemy acts different for move_lasers function than player
            
@@ -396,9 +402,9 @@ def main():
                 death_sound.play()
                 enemies.remove(enemy)
 
-            elif enemy.y + enemy.get_height() > HEIGHT: # lives counter down
-                lives -= 1
-                enemies.remove(enemy)
+            elif enemy.y + enemy.get_height() > HEIGHT: 
+                lives -= 1 # lives counter down
+                enemies.remove(enemy) # remove enemies
 
         player.move_lasers(-laser_vel, enemies) # (polymorfism) - player acts different for move_lasers function than enemy
 
