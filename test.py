@@ -1,7 +1,15 @@
+"""
+1. Abstrakcja - linie 112 (class Ship(ABC)) i 128 (@abstractmethod) 
+2. Polimorfizm - linie: 128 (@abstractmethod), 163 (def move_lasers), 200 (def move_lasers), 388, 403
+3. Dziedziczenie - linie: 152 (class Player(Ship)) i 187 (class Enemy(Ship))
+4. Enkapsulacja - linie: 70 ( __ROCKY_MAP) i 188 (__COLOR_MAP)
+"""
+
 import pygame
 import os
 import time
 import random
+from abc import ABC, abstractmethod # import python abstract class 
 pygame.font.init()
 pygame.mixer.init()
 
@@ -59,7 +67,9 @@ class Laser:
         return collide(self, obj)
 
 class Meteor: # NEW!
-    ROCKY_MAP = {
+    __ROCKY_MAP = {             # (encapsulation) double underscore according to python convencion makes variable
+                                # ROCKY_MAP private. In runtime python is mangling __ into class name,
+                                # so refering to __ROCKY_MAP from outside class cause error 
         "Rock1": (Meteor_1),
         "Rock2": (Meteor_2),
         "Rock3": (Meteor_3)
@@ -70,7 +80,7 @@ class Meteor: # NEW!
         self.x = x
         self.y = y
         self.health = health
-        self.meteor_img = self.ROCKY_MAP.get(rocky)
+        self.meteor_img = self.__ROCKY_MAP.get(rocky)
         self.mask = pygame.mask.from_surface(self.meteor_img)
       
 
@@ -99,7 +109,7 @@ class Meteor: # NEW!
             return self.meteor_img.get_height()
  
 
-class Ship:
+class Ship(ABC): # class ship inherits from ABC (python mechanism to make Ship abstract class)
     
     def __init__(self, x, y, health=100): # Ship constructor
         self.x = x
@@ -115,16 +125,9 @@ class Ship:
         for laser in self.lasers:
             laser.draw(window)
 
+    @abstractmethod     # classes which inhericts from Ship class are obligated to provide implementation of move_lasers (abstraction, polymorfism) 
     def move_lasers(self, vel, obj): # Laser movment at all ships
-        self.cooldown()
-        for laser in self.lasers:
-            laser.move(vel)
-            if laser.off_screen(HEIGHT):
-                self.lasers.remove(laser)
-            elif laser.collision(obj):
-                obj.health -= 10
-                damage_sound.play()
-                self.lasers.remove(laser)
+        pass
 
     def cooldown(self): 
         if self.cool_down_counter >= self.COOLDOWN:
@@ -146,7 +149,7 @@ class Ship:
     def get_height(self):
         return self.ship_img.get_height()
 
-class Player(Ship):
+class Player(Ship): # class Player inherits from Ship
 
     COOLDOWN = 20 
 
@@ -181,18 +184,29 @@ class Player(Ship):
         pygame.draw.rect(window, (255, 0, 0), (self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width(), 10))
         pygame.draw.rect(window, (0, 255, 0), (self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width() * (self.health / self.max_health), 10))
 
-class Enemy(Ship): # Three types of enemy ships
-    COLOR_MAP = {
-        "silver": (Enemy1_SPACE_SHIP, Enemy1_LASER),
+class Enemy(Ship): # Enemy inherits from Ship
+    __COLOR_MAP = {   # (Encapsulation - COLOR_MAP is private)
+        "silver": (Enemy1_SPACE_SHIP, Enemy1_LASER), # Three types of enemy ships
         "red": (Enemy2_SPACE_SHIP, Enemy2_LASER),
         "green": (Enemy3_SPACE_SHIP, Enemy3_LASER)
     }
 
     def __init__(self, x, y, color, health=100): # constructor
         super().__init__(x, y, health) 
-        self.ship_img, self.laser_img = self.COLOR_MAP[color]
+        self.ship_img, self.laser_img = self.__COLOR_MAP[color]
         self.mask = pygame.mask.from_surface(self.ship_img)
         self.COOLDOWN = random.randrange(10, 60) # random shot frequency
+
+    def move_lasers(self, vel, obj): # Laser movment at all enemies ships
+        self.cooldown()
+        for laser in self.lasers:
+            laser.move(vel)
+            if laser.off_screen(HEIGHT):
+                self.lasers.remove(laser)
+            elif laser.collision(obj):
+                obj.health -= 10
+                damage_sound.play()
+                self.lasers.remove(laser)
 
     def move(self, vel):
 
@@ -371,7 +385,7 @@ def main():
 
         for enemy in enemies[:]: # enemy movment
             enemy.move(enemy_vel)
-            enemy.move_lasers(laser_vel, player)
+            enemy.move_lasers(laser_vel, player) # (polymorfism) - enemy acts different for move_lasers function than player
            
             if random.randrange(0, 2*60) == 1: # enemy fire rate
                enemy.shoot()
@@ -386,7 +400,7 @@ def main():
                 lives -= 1
                 enemies.remove(enemy)
 
-        player.move_lasers(-laser_vel, enemies)
+        player.move_lasers(-laser_vel, enemies) # (polymorfism) - player acts different for move_lasers function than enemy
 
 def main_menu():
     title_font = pygame.font.SysFont("comicsans", 70)
